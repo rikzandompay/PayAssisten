@@ -1,0 +1,126 @@
+{
+  "name": "WhatsApp Bot Auto-Reply",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wa-webhook",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [ 250, 300 ],
+      "webhookId": "wa-webhook-id"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json[\"body\"][\"data\"][\"fromMe\"]}}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "name": "Hanya Pesan Masuk",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [ 450, 300 ]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "name": "Tunggu 2 Menit",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [ 650, 280 ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-3.5-turbo",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "content": "Anda adalah asisten AI yang bertugas membalas pesan WhatsApp ketika pengguna sedang sibuk atau tidak membalas dalam 2 menit. Balas dengan ramah dan relevan sesuai topik obrolan."
+            },
+            {
+              "role": "user",
+              "content": "Pesan dari {{$json[\"body\"][\"data\"][\"contact\"][\"name\"]}}: {{$json[\"body\"][\"data\"][\"body\"]}}"
+            }
+          ]
+        }
+      },
+      "name": "OpenAI",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [ 850, 280 ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://whatsapp-wa-api-1:3000/api/messages/send",
+        "jsonParameters": true,
+        "options": {},
+        "bodyParametersJson": "={\n  \"to\": \"{{$node[\"Webhook\"].json[\"body\"][\"data\"][\"from\"]}}\",\n  \"message\": \"🤖 (Pesan otomatis AI): \\n{{$json[\"message\"][\"content\"]}}\"\n}",
+        "headerParametersJson": "={\n  \"api-key\": \"YOUR_API_KEY_HERE\"\n}"
+      },
+      "name": "Kirim Balasan WA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [ 1050, 280 ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Hanya Pesan Masuk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hanya Pesan Masuk": {
+      "main": [
+        [
+          {
+            "node": "Tunggu 2 Menit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tunggu 2 Menit": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Kirim Balasan WA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {}
+}
