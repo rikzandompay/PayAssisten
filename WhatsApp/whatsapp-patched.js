@@ -1,4 +1,5 @@
 const dns = require('node:dns').promises;
+const fs = require('node:fs');
 const net = require('node:net');
 const path = require('node:path');
 const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
@@ -45,6 +46,28 @@ class WhatsAppService {
     }
   }
 
+  cleanBrowserLockFiles() {
+    const authPath = path.resolve(process.cwd(), '.wwebjs_auth');
+    const lockNames = ['SingletonLock', 'SingletonCookie', 'SingletonSocket'];
+    const cleanDir = (dir) => {
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (lockNames.includes(entry.name)) {
+            try {
+              fs.unlinkSync(fullPath);
+              console.log(`[whatsapp:${this.tenantId}] removed stale lock: ${fullPath}`);
+            } catch {}
+          } else if (entry.isDirectory()) {
+            cleanDir(fullPath);
+          }
+        }
+      } catch {}
+    };
+    if (fs.existsSync(authPath)) cleanDir(authPath);
+  }
+
   async initialize() {
     if (this.stopped || this.client || this.initializing) return;
 
@@ -55,9 +78,19 @@ class WhatsAppService {
       lastError: null
     });
 
+    // Clean stale Chromium lock files from previous container runs
+    this.cleanBrowserLockFiles();
+
     const puppeteer = {
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-extensions',
+        '--no-first-run'
+      ]
     };
 
     if (process.env.PUPPETEER_EXECUTABLE_PATH) {
@@ -69,7 +102,11 @@ class WhatsAppService {
         clientId: this.tenantId,
         dataPath: '.wwebjs_auth'
       }),
-      puppeteer
+      puppeteer,
+      webVersionCache: {
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/nicholaschun/nicholaschun-web-wak/main/nicholaschun-web-wak',
+      }
     });
 
     this.registerEvents();
@@ -77,14 +114,33 @@ class WhatsAppService {
     try {
       await this.client.initialize();
     } catch (error) {
+      const isBrowserRunning = error.message?.includes('already running');
       this.setState({
         status: 'error',
-        message: 'Gagal menginisialisasi WhatsApp',
+        message: isBrowserRunning
+          ? 'Browser sebelumnya belum berhenti, membersihkan dan mencoba ulang...'
+          : 'Gagal menginisialisasi WhatsApp',
         lastError: error.message
       });
+
+      // Force kill any orphaned browser processes
+      if (isBrowserRunning) {
+        try {
+          require('node:child_process').execSync(
+            'pkill -f chromium 2>/dev/null || pkill -f chrome 2>/dev/null || true',
+            { stdio: 'ignore', timeout: 5000 }
+          );
+        } catch {}
+        this.cleanBrowserLockFiles();
+      }
+
       this.client = null;
-      console.error(`[whatsapp:${this.tenantId}] initialize error:`, error);
-      if (!this.stopped) setTimeout(() => this.initialize(), 15000);
+      console.error(`[whatsapp:${this.tenantId}] initialize error:`, error.message);
+      if (!this.stopped) {
+        const retryDelay = isBrowserRunning ? 5000 : 15000;
+        console.log(`[whatsapp:${this.tenantId}] retrying in ${retryDelay / 1000}s...`);
+        setTimeout(() => this.initialize(), retryDelay);
+      }
     } finally {
       this.initializing = false;
     }
