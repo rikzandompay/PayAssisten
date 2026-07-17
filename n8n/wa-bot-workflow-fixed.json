@@ -25,16 +25,16 @@
           "conditions": [
             {
               "id": "cond-1",
-              "leftValue": "={{ $json.data.fromMe }}",
-              "rightValue": false,
+              "leftValue": "={{ $json.body.data.fromMe?.toString() }}",
+              "rightValue": "false",
               "operator": {
-                "type": "boolean",
+                "type": "string",
                 "operation": "equals"
               }
             },
             {
               "id": "cond-2",
-              "leftValue": "={{ $json.data.from }}",
+              "leftValue": "={{ $json.body.data.contact.id }}",
               "rightValue": "@g.us",
               "operator": {
                 "type": "string",
@@ -54,7 +54,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://wa-api-production-86c5.up.railway.app/api/send-message",
+        "url": "https://wa-api-production-86c5.up.railway.app/api/messages/send",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -66,7 +66,7 @@
         },
         "sendBody": true,
         "contentType": "json",
-        "body": "={{ JSON.stringify({ \"to\": $json.data.from, \"message\": \"Halo! Terima kasih sudah menghubungi Rikzan. Mohon maaf saat ini sedang sibuk dan belum bisa membalas. Pesan kamu sudah diterima dan akan dibalas secepatnya ya! 😊\" }) }}"
+        "body": "={{ JSON.stringify({ \"to\": $json.body.data.contact.id || $json.body.data.from, \"message\": \"Halo! Terima kasih sudah menghubungi Rikzan. Mohon maaf saat ini sedang sibuk dan belum bisa membalas. Pesan kamu sudah diterima dan akan dibalas secepatnya ya! 😊\" }) }}"
       },
       "id": "node-send",
       "name": "Kirim Balasan WA",

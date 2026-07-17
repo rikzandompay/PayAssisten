@@ -5,10 +5,14 @@ networks:
 
 services:
   wa-api:
-    image: alimustopaaop/wa-web-api:v1
+    build: .
     restart: unless-stopped
     ports:
       - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./.wwebjs_auth:/app/.wwebjs_auth
+      - ./wa_api_src/src/services/whatsapp.js:/app/src/services/whatsapp.js
     dns:
       - 8.8.8.8
       - 8.8.4.4
