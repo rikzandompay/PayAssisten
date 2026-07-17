@@ -25,7 +25,7 @@
           "conditions": [
             {
               "id": "cond-1",
-              "leftValue": "={{ $json.body.data.fromMe?.toString() }}",
+              "leftValue": "={{ $json.body?.data?.fromMe?.toString() ?? 'true' }}",
               "rightValue": "false",
               "operator": {
                 "type": "string",
@@ -34,7 +34,7 @@
             },
             {
               "id": "cond-2",
-              "leftValue": "={{ $json.body.data.contact.id }}",
+              "leftValue": "={{ $json.body?.data?.contact?.id ?? $json.body?.data?.from ?? '' }}",
               "rightValue": "@g.us",
               "operator": {
                 "type": "string",
@@ -60,7 +60,7 @@
           "parameters": [
             {
               "name": "api-key",
-              "value": "9b7c459c32b4434d1caa0c9909a85e9267a2d0"
+              "value": "3f71ae65f5d2e96584d8952c1ab783b285071c286a4fd42d"
             }
           ]
         },
