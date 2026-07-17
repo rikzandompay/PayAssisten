@@ -95,9 +95,16 @@ class WhatsAppService {
 
         this.client.on('message', async (msg) => {
             try {
-                const config = await readConfig(this.tenantId);
-                const webhookUrl = config?.webhookUrl || null;
-                if (!webhookUrl) return;
+                // Baca webhook URL dari env var (priority) atau dari config store
+                let webhookUrl = process.env.WEBHOOK_URL || null;
+                if (!webhookUrl) {
+                    const config = await readConfig(this.tenantId);
+                    webhookUrl = config?.webhookUrl || null;
+                }
+                if (!webhookUrl) {
+                    console.warn(`[Tenant ${this.tenantId}] No webhook URL configured. Set WEBHOOK_URL env var.`);
+                    return;
+                }
 
                 const payload = {
                     event: 'message',
