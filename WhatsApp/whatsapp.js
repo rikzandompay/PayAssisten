@@ -76,12 +76,14 @@ class WhatsAppService {
         });
 
         this.client.on('ready', () => {
+            console.log(`[Tenant ${this.tenantId}] Client is READY!`);
             this.qrCode = null;
             this.status = 'CONNECTED';
             this.connectedAt = new Date().toISOString();
         });
 
         this.client.on('authenticated', () => {
+            console.log(`[Tenant ${this.tenantId}] AUTHENTICATED successfully!`);
             this.status = 'AUTHENTICATING';
         });
 
