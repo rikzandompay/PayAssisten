@@ -4,3 +4,4 @@ dockerfilePath = "Dockerfile"
 watchPatterns = ["/n8n/**"]
 [deploy]
 restartPolicyType = "always"
+watchPatterns = ["/n8n/**"]
