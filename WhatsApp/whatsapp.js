@@ -43,7 +43,11 @@ class WhatsAppService {
                         clientId: this.tenantId,
                         dataPath: '.wwebjs_auth'
                     }),
-                    puppeteer
+                    puppeteer,
+                    webVersionCache: {
+                        type: 'remote',
+                        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
+                    }
                 });
 
                 this.registerEvents();
